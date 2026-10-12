@@ -1,0 +1,198 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>PedsDose</title>
+<meta name="robots" content="noindex, nofollow">
+<meta name="description" content="Weight-based paediatric anaesthesia and resuscitation reference (prototype)">
+<meta name="theme-color" content="#0b0f14" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#f4f6f9" media="(prefers-color-scheme: light)">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="PedsDose">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icon-180.png">
+<style>
+:root {
+  color-scheme: dark;
+  --bg: #0b0f14; --surface: #151b24; --line: #232c38; --text: #eef2f6; --muted: #8a97a8;
+  --accent: #5eead4; --knob: #ffffff; --track: #1b232e;
+  --red: #ff6b6b; --blue: #60a5fa; --violet: #b197fc; --teal: #2dd4bf;
+  --amber: #fbbf24; --orange: #fb923c; --sky: #7dd3fc;
+  --d: min(92vw, 56dvh, 460px);
+}
+@media (prefers-color-scheme: light) {
+  :root {
+    color-scheme: light;
+    --bg: #f4f6f9; --surface: #ffffff; --line: #e1e6ed; --text: #101822; --muted: #5d6b7c;
+    --accent: #0d9488; --knob: #101822; --track: #e3e8ee;
+    --red: #dc2626; --blue: #2563eb; --violet: #7c3aed; --teal: #0d9488;
+    --amber: #b45309; --orange: #c2410c; --sky: #0369a1;
+  }
+}
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0; background: var(--bg); color: var(--text);
+  font: 15px/1.35 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  overscroll-behavior: none;
+}
+button { font: inherit; color: inherit; background: none; border: 0; padding: 0; cursor: pointer; touch-action: manipulation; }
+button:focus-visible, svg:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+[hidden] { display: none !important; }
+
+/* ---------- home / dial ---------- */
+#home {
+  min-height: 100dvh; display: grid; align-content: center; justify-items: center; gap: 28px 56px;
+  padding: calc(env(safe-area-inset-top) + 16px) 16px calc(env(safe-area-inset-bottom) + 16px);
+  user-select: none; -webkit-user-select: none;
+}
+.picker { display: grid; justify-items: center; gap: 14px; }
+.brand { font-weight: 700; letter-spacing: .02em; font-size: 17px; }
+.brand span { color: var(--muted); font-weight: 500; }
+.dialwrap { position: relative; width: var(--d); height: var(--d); }
+#dial { width: 100%; height: 100%; display: block; touch-action: none; cursor: grab; border-radius: 50%; }
+#dial.drag { cursor: grabbing; }
+.track, .fill { fill: none; stroke-width: 36; stroke-linecap: round; }
+.track { stroke: var(--track); }
+.fill { stroke: var(--accent); opacity: .28; }
+.tick { fill: var(--muted); opacity: .55; }
+.tick.on { fill: var(--accent); opacity: 1; }
+.lbl { fill: var(--muted); font-size: 13px; font-weight: 600; text-anchor: middle; dominant-baseline: central; }
+.knob { fill: var(--knob); filter: drop-shadow(0 2px 5px rgb(0 0 0 / .45)); }
+#go {
+  position: absolute; inset: 24%; border-radius: 50%; background: var(--surface); border: 1px solid var(--line);
+  display: grid; place-content: center; justify-items: center; line-height: 1;
+  transition: transform .08s;
+}
+#go:active { transform: scale(.96); }
+#go .kg { font-size: calc(var(--d) * .2); font-weight: 750; font-variant-numeric: tabular-nums; letter-spacing: -.03em; }
+#go .kg small { font-size: .32em; font-weight: 600; color: var(--muted); margin-left: .15em; letter-spacing: 0; }
+#go .age { font-size: calc(var(--d) * .042); color: var(--muted); margin-top: .5em; }
+#go .cta { font-size: calc(var(--d) * .036); font-weight: 700; color: var(--accent); margin-top: 1.1em; letter-spacing: .08em; text-transform: uppercase; }
+.nudge { display: flex; align-items: center; gap: 18px; color: var(--muted); font-size: 13px; }
+.nudge button {
+  width: 48px; height: 48px; border-radius: 50%; background: var(--surface); border: 1px solid var(--line);
+  font-size: 24px; line-height: 1; color: var(--text);
+}
+.nudge button:active { background: var(--line); }
+#grid { display: none; }
+.warn { color: var(--muted); font-size: 12px; text-align: center; max-width: 46ch; margin: 0; }
+.warn b { color: var(--amber); }
+
+@media (min-width: 900px) {
+  #home { grid-template-columns: auto minmax(0, 420px); justify-content: center; }
+  #home .warn { grid-column: 1 / -1; }
+  #grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; align-self: center; width: 100%; }
+  #grid button {
+    background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 9px 4px;
+    display: grid; gap: 2px;
+  }
+  #grid button:hover { border-color: var(--accent); }
+  #grid b { font-size: 18px; font-variant-numeric: tabular-nums; }
+  #grid span { font-size: 11px; color: var(--muted); white-space: nowrap; }
+}
+
+/* ---------- sheet ---------- */
+.bar {
+  position: sticky; top: 0; z-index: 2; background: var(--bg); border-bottom: 1px solid var(--line);
+  padding: calc(env(safe-area-inset-top) + 8px) max(12px, env(safe-area-inset-left)) 8px max(12px, env(safe-area-inset-right));
+}
+.barrow { display: flex; align-items: center; gap: 10px; max-width: 1500px; margin: 0 auto; }
+.pill {
+  height: 40px; min-width: 40px; padding: 0 12px; border-radius: 20px; background: var(--surface);
+  border: 1px solid var(--line); font-weight: 600; font-size: 18px; line-height: 1;
+}
+.pill:disabled { opacity: .3; }
+#back { font-size: 14px; }
+.weight { margin-right: auto; display: flex; align-items: baseline; gap: 8px; white-space: nowrap; }
+.weight b { font-size: 30px; font-weight: 750; letter-spacing: -.02em; font-variant-numeric: tabular-nums; line-height: 1; }
+.weight b small { font-size: .5em; color: var(--muted); font-weight: 600; margin-left: 2px; }
+.weight > span { color: var(--muted); font-size: 13px; }
+#chips { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; max-width: 1500px; margin: 8px auto 0; }
+#chips::-webkit-scrollbar { display: none; }
+#chips button {
+  flex: none; padding: 5px 11px; border-radius: 14px; font-size: 12.5px; font-weight: 600;
+  background: color-mix(in srgb, var(--c) 14%, transparent); color: var(--c);
+}
+.red { --c: var(--red); } .blue { --c: var(--blue); } .violet { --c: var(--violet); } .teal { --c: var(--teal); }
+.amber { --c: var(--amber); } .orange { --c: var(--orange); } .sky { --c: var(--sky); }
+
+main {
+  max-width: 1500px; margin: 0 auto;
+  padding: 12px max(12px, env(safe-area-inset-left)) calc(env(safe-area-inset-bottom) + 24px) max(12px, env(safe-area-inset-right));
+}
+#vitals { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 12px; }
+#vitals div { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 8px 10px; min-width: 0; }
+#vitals span { display: block; font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; white-space: nowrap; }
+#vitals b { font-size: 15px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+
+#cards { columns: 380px; column-gap: 12px; }
+.card {
+  break-inside: avoid; margin: 0 0 12px; background: var(--surface); border: 1px solid var(--line);
+  border-radius: 14px; overflow: hidden; scroll-margin-top: calc(env(safe-area-inset-top) + 104px);
+}
+.card h2 {
+  margin: 0; padding: 9px 12px; font-size: 12.5px; letter-spacing: .08em; text-transform: uppercase;
+  color: var(--c); background: color-mix(in srgb, var(--c) 10%, transparent);
+}
+.row { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(4.6em, auto); gap: 10px; align-items: center; padding: 8px 12px; border-top: 1px solid var(--line); }
+.what b { display: block; font-weight: 600; }
+.what span { display: block; font-size: 12px; color: var(--muted); }
+.dose, .size, .vol { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.dose { font-size: 15px; font-weight: 600; }
+.size { grid-column: 2 / -1; font-size: 17px; font-weight: 700; }
+.vol { font-size: 16px; font-weight: 750; color: var(--c); }
+.vol small, .dose small { display: block; font-size: 10.5px; font-weight: 500; color: var(--muted); white-space: normal; line-height: 1.15; }
+.dose small.cap { color: var(--amber); font-weight: 700; text-transform: uppercase; letter-spacing: .06em; }
+main .warn { max-width: none; margin-top: 8px; }
+</style>
+</head>
+<body>
+
+<div id="home">
+  <div class="picker">
+    <div class="brand">PedsDose <span>· select weight</span></div>
+    <div class="dialwrap">
+      <svg id="dial" viewBox="0 0 360 360" role="slider" tabindex="0" aria-label="Weight"
+           aria-valuemin="3" aria-valuemax="50"></svg>
+      <button id="go" aria-label="Open dosing sheet">
+        <span class="kg"><span id="goKg"></span><small>kg</small></span>
+        <span class="age" id="goAge"></span>
+        <span class="cta">Open ›</span>
+      </button>
+    </div>
+    <div class="nudge">
+      <button id="dec" aria-label="Lower weight">−</button>
+      <span>drag the ring · tap centre</span>
+      <button id="inc" aria-label="Higher weight">+</button>
+    </div>
+  </div>
+  <div id="grid" aria-label="Pick weight directly"></div>
+  <p class="warn"><b>Prototype.</b> Content is not clinically validated. Do not use for patient care.</p>
+</div>
+
+<div id="sheet" hidden>
+  <header class="bar">
+    <div class="barrow">
+      <button class="pill" id="back" aria-label="Back to weight dial">‹ Weight</button>
+      <div class="weight"><b><span id="sheetKg"></span><small>kg</small></b><span id="sheetAge"></span></div>
+      <button class="pill" id="prev" aria-label="Previous weight">−</button>
+      <button class="pill" id="next" aria-label="Next weight">+</button>
+    </div>
+    <nav id="chips"></nav>
+  </header>
+  <main>
+    <div id="vitals"></div>
+    <div id="cards"></div>
+    <p class="warn"><b>Prototype.</b> Doses, concentrations and sizes are unvalidated placeholders. Verify against local guidelines.</p>
+  </main>
+</div>
+
+<script src="data.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
